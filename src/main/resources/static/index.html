@@ -1,22 +1,200 @@
+<!--<!DOCTYPE html>-->
+<!--<html>-->
+<!--<head>-->
+<!--    <title>Spring Boot Chat</title>-->
+<!--    <style>-->
+<!--        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }-->
+<!--        #chat-box { height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }-->
+<!--        #message-input { width: 80%; padding: 8px; }-->
+<!--        #send-btn { width: 18%; padding: 8px; }-->
+<!--        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }-->
+<!--        .sent { background-color: #dcf8c6; text-align: right; }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>Spring Boot Chat</h1>-->
+<!--<div id="chat-box"></div>-->
+<!--<input type="text" id="message-input" placeholder="Type your message...">-->
+<!--<button id="send-btn">Send</button>-->
+<!--<input type="text" id="sender" placeholder="Your name">-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>-->
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>-->
+<!--<script>-->
+<!--    const chatBox = document.getElementById('chat-box');-->
+<!--    const messageInput = document.getElementById('message-input');-->
+<!--    const sendBtn = document.getElementById('send-btn');-->
+<!--    const senderInput = document.getElementById('sender');-->
+
+<!--    // WebSocket connection-->
+<!--    const socket = new SockJS('/ws-chat');-->
+<!--    const stompClient = Stomp.over(socket);-->
+
+<!--    stompClient.connect({}, function(frame) {-->
+<!--        console.log('Connected: ' + frame);-->
+
+<!--        stompClient.subscribe('/topic/public', function(message) {-->
+<!--            const chatMessage = JSON.parse(message.body);-->
+<!--            addMessage(chatMessage.content, chatMessage.sender);-->
+<!--        });-->
+<!--    });-->
+
+<!--    function addMessage(content, sender) {-->
+<!--        const messageDiv = document.createElement('div');-->
+<!--        messageDiv.classList.add('message');-->
+<!--        messageDiv.classList.add('sent');-->
+<!--        messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;-->
+<!--        chatBox.appendChild(messageDiv);-->
+<!--        chatBox.scrollTop = chatBox.scrollHeight;-->
+<!--    }-->
+
+<!--    sendBtn.addEventListener('click', sendMessage);-->
+<!--    messageInput.addEventListener('keypress', function(e) {-->
+<!--        if (e.key === 'Enter') sendMessage();-->
+<!--    });-->
+
+<!--    function sendMessage() {-->
+<!--        const messageContent = messageInput.value.trim();-->
+<!--        const sender = senderInput.value.trim() || 'Anonymous';-->
+
+<!--        if (messageContent) {-->
+<!--            const chatMessage = {-->
+<!--                content: messageContent,-->
+<!--                sender: sender-->
+<!--            };-->
+
+<!--            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));-->
+<!--            messageInput.value = '';-->
+<!--        }-->
+<!--    }-->
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
 <!DOCTYPE html>
 <html>
 <head>
     <title>Spring Boot Chat</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        #chat-box { height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }
-        #message-input { width: 80%; padding: 8px; }
-        #send-btn { width: 18%; padding: 8px; }
-        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }
-        .sent { background-color: #dcf8c6; text-align: right; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        #chat-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        #chat-box {
+            height: 500px;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
+        }
+        #message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.3s;
+        }
+        #message-input:focus {
+            border-color: #3498db;
+        }
+        #send-btn {
+            margin-left: 10px;
+            padding: 12px 25px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        #send-btn:hover {
+            background-color: #2980b9;
+        }
+        #sender {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            line-height: 1.4;
+            position: relative;
+        }
+        .sent {
+            background-color: #3498db;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        .received {
+            background-color: #eaeaea;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        .message strong {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .sent strong {
+            color: #e6f2ff;
+        }
+        .received strong {
+            color: #555;
+        }
+        .message-content {
+            margin: 5px 0;
+        }
+        .timestamp {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
 <h1>Spring Boot Chat</h1>
-<div id="chat-box"></div>
-<input type="text" id="message-input" placeholder="Type your message...">
-<button id="send-btn">Send</button>
-<input type="text" id="sender" placeholder="Your name">
+<div id="chat-container">
+    <input type="text" id="sender" placeholder="Your name">
+    <div id="chat-box"></div>
+    <div class="input-container">
+        <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
@@ -35,25 +213,32 @@
 
         stompClient.subscribe('/topic/public', function(message) {
             const chatMessage = JSON.parse(message.body);
-            addMessage(chatMessage.content, chatMessage.sender);
+            // Only add message if it's from another user
+            if (chatMessage.sender !== senderInput.value.trim()) {
+                addMessage(chatMessage.content, chatMessage.sender, false);
+            }
         });
     });
 
-    function addMessage(content, sender) {
+    function addMessage(content, sender, isSent) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
-        messageDiv.classList.add('sent');
-        messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+        messageDiv.classList.add(isSent ? 'sent' : 'received');
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        messageDiv.innerHTML = `
+            <strong>${sender}</strong>
+            <div class="message-content">${content}</div>
+            <div class="timestamp">${timeString}</div>
+        `;
+
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
-
-    function sendMessage() {
+    sendBtn.addEventListener('click', function() {
         const messageContent = messageInput.value.trim();
         const sender = senderInput.value.trim() || 'Anonymous';
 
@@ -64,9 +249,28 @@
             };
 
             stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            addMessage(messageContent, sender, true);
             messageInput.value = '';
         }
-    }
+    });
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const messageContent = messageInput.value.trim();
+            const sender = senderInput.value.trim() || 'Anonymous';
+
+            if (messageContent) {
+                const chatMessage = {
+                    content: messageContent,
+                    sender: sender
+                };
+
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                addMessage(messageContent, sender, true);
+                messageInput.value = '';
+            }
+        }
+    });
 </script>
 </body>
 </html>
