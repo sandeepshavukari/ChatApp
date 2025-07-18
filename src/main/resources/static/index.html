@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring Boot Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        #chat-box { height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }
+        #message-input { width: 80%; padding: 8px; }
+        #send-btn { width: 18%; padding: 8px; }
+        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }
+        .sent { background-color: #dcf8c6; text-align: right; }
+    </style>
+</head>
+<body>
+<h1>Spring Boot Chat</h1>
+<div id="chat-box"></div>
+<input type="text" id="message-input" placeholder="Type your message...">
+<button id="send-btn">Send</button>
+<input type="text" id="sender" placeholder="Your name">
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+    const chatBox = document.getElementById('chat-box');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const senderInput = document.getElementById('sender');
+
+    // WebSocket connection
+    const socket = new SockJS('/ws-chat');
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+
+        stompClient.subscribe('/topic/public', function(message) {
+            const chatMessage = JSON.parse(message.body);
+            addMessage(chatMessage.content, chatMessage.sender);
+        });
+    });
+
+    function addMessage(content, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.classList.add('sent');
+        messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    function sendMessage() {
+        const messageContent = messageInput.value.trim();
+        const sender = senderInput.value.trim() || 'Anonymous';
+
+        if (messageContent) {
+            const chatMessage = {
+                content: messageContent,
+                sender: sender
+            };
+
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            messageInput.value = '';
+        }
+    }
+</script>
+</body>
+</html>
