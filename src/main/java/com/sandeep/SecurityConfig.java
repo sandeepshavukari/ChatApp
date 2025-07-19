@@ -28,17 +28,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/ws/**", "/webjars/**", "/css/**", "/js/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/ws/**")  // Disable CSRF for WebSocket
-                )
-                .headers(headers -> headers
-                        .frameOptions().disable()
-                );
-
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/index.html", "/ws/**").permitAll()
+                .anyRequest().authenticated()
+            )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/ws/**") // Disable CSRF for WebSocket
+            );
+        
         return http.build();
     }
 }

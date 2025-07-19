@@ -319,13 +319,40 @@
     });
 
     // WebSocket connection
-    const socket = new SockJS('http://localhost:9090/ws');
-    const stompClient = Stomp.over(socket);
+   // const socket = new SockJS('https://chatapp-sbf6.onrender.com/');
+   // const stompClient = Stomp.over(socket);
     
     // Set debug to see connection messages in console
-    stompClient.debug = function(str) {
-        console.log('STOMP: ' + str);
-    };
+   // stompClient.debug = function(str) {
+     //   console.log('STOMP: ' + str);
+   // };
+   // Get the current host dynamically
+const host = window.location.hostname;
+const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+const port = window.location.port ? `:${window.location.port}` : '';
+
+// Connect using the current host
+const socket = new SockJS(`${protocol}://${host}${port}/ws`);
+const stompClient = Stomp.over(socket);
+
+// Enable debug
+stompClient.debug = function(str) {
+    console.log('STOMP:', str);
+};
+
+stompClient.connect({}, function(frame) {
+    console.log('Connected:', frame);
+    updateConnectionStatus(true);
+    
+    stompClient.subscribe('/topic/public', function(message) {
+        const chatMessage = JSON.parse(message.body);
+        addMessage(chatMessage.content, chatMessage.sender, chatMessage.sender === senderInput.value.trim());
+    });
+}, function(error) {
+    console.error('Connection error:', error);
+    updateConnectionStatus(false);
+    setTimeout(connectWebSocket, 5000); // Reconnect after 5 seconds
+});
 
     function updateConnectionStatus(connected) {
         connectionStatus.textContent = connected ? 'Connected' : 'Disconnected';
@@ -413,6 +440,7 @@
     window.addEventListener('resize', function() {
         chatBox.scrollTop = chatBox.scrollHeight;
     });
+    
 </script>
 </body>
 </html>
