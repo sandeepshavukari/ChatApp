@@ -1,226 +1,686 @@
-<!--<!DOCTYPE html>-->
-<!--<html>-->
-<!--<head>-->
-<!--    <title>Spring Boot Chat</title>-->
-<!--    <style>-->
-<!--        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }-->
-<!--        #chat-box { height: 400px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }-->
-<!--        #message-input { width: 80%; padding: 8px; }-->
-<!--        #send-btn { width: 18%; padding: 8px; }-->
-<!--        .message { margin: 5px 0; padding: 8px; border-radius: 5px; }-->
-<!--        .sent { background-color: #dcf8c6; text-align: right; }-->
-<!--    </style>-->
-<!--</head>-->
-<!--<body>-->
-<!--<h1>Spring Boot Chat</h1>-->
-<!--<div id="chat-box"></div>-->
-<!--<input type="text" id="message-input" placeholder="Type your message...">-->
-<!--<button id="send-btn">Send</button>-->
-<!--<input type="text" id="sender" placeholder="Your name">-->
-
-<!--<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>-->
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>-->
-<!--<script>-->
-<!--    const chatBox = document.getElementById('chat-box');-->
-<!--    const messageInput = document.getElementById('message-input');-->
-<!--    const sendBtn = document.getElementById('send-btn');-->
-<!--    const senderInput = document.getElementById('sender');-->
-
-<!--    // WebSocket connection-->
-<!--    const socket = new SockJS('/ws-chat');-->
-<!--    const stompClient = Stomp.over(socket);-->
-
-<!--    stompClient.connect({}, function(frame) {-->
-<!--        console.log('Connected: ' + frame);-->
-
-<!--        stompClient.subscribe('/topic/public', function(message) {-->
-<!--            const chatMessage = JSON.parse(message.body);-->
-<!--            addMessage(chatMessage.content, chatMessage.sender);-->
-<!--        });-->
-<!--    });-->
-
-<!--    function addMessage(content, sender) {-->
-<!--        const messageDiv = document.createElement('div');-->
-<!--        messageDiv.classList.add('message');-->
-<!--        messageDiv.classList.add('sent');-->
-<!--        messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;-->
-<!--        chatBox.appendChild(messageDiv);-->
-<!--        chatBox.scrollTop = chatBox.scrollHeight;-->
-<!--    }-->
-
-<!--    sendBtn.addEventListener('click', sendMessage);-->
-<!--    messageInput.addEventListener('keypress', function(e) {-->
-<!--        if (e.key === 'Enter') sendMessage();-->
-<!--    });-->
-
-<!--    function sendMessage() {-->
-<!--        const messageContent = messageInput.value.trim();-->
-<!--        const sender = senderInput.value.trim() || 'Anonymous';-->
-
-<!--        if (messageContent) {-->
-<!--            const chatMessage = {-->
-<!--                content: messageContent,-->
-<!--                sender: sender-->
-<!--            };-->
-
-<!--            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));-->
-<!--            messageInput.value = '';-->
-<!--        }-->
-<!--    }-->
-<!--</script>-->
-<!--</body>-->
-<!--</html>-->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spring Boot Chat</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --container-bg: white;
+            --input-bg: white;
+            --border-color: #ddd;
+            --primary-color: #3498db;
+            --primary-hover: #2980b9;
+            --message-sent: #3498db;
+            --message-received: #eaeaea;
+            --message-text-sent: white;
+            --message-text-received: #333;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --chat-bg: #fafafa;
+            --status-color: rgba(255, 255, 255, 0.7);
         }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --input-bg: #2d2d2d;
+            --border-color: #444;
+            --primary-color: #1a73e8;
+            --primary-hover: #0d62c9;
+            --message-sent: #1a73e8;
+            --message-received: #2d2d2d;
+            --message-text-sent: white;
+            --message-text-received: #e0e0e0;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --chat-bg: #121212;
+            --status-color: rgba(255, 255, 255, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
         h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
+            margin: 0;
+            font-size: 1.5rem;
             font-weight: 600;
         }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
         #chat-container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            margin: 0 auto;
+            width: 100%;
+            height: calc(100vh - 120px);
         }
+
+        #sender-container {
+            padding: 10px 15px;
+            background-color: var(--container-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 68px;
+            z-index: 10;
+        }
+
+        #sender {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
         #chat-box {
-            height: 500px;
-            padding: 20px;
+            flex: 1;
+            padding: 15px;
             overflow-y: auto;
-            background-color: #fafafa;
+            background-color: var(--chat-bg);
+            scroll-behavior: smooth;
         }
+
         .input-container {
             display: flex;
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #eee;
+            padding: 10px 15px;
+            background-color: var(--container-bg);
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
         }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
         #message-input {
             flex: 1;
             padding: 12px 15px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 25px;
-            font-size: 16px;
-            outline: none;
-            transition: border 0.3s;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            padding-right: 40px; /* Space for emoji button */
         }
+
         #message-input:focus {
-            border-color: #3498db;
+            outline: none;
+            border-color: var(--primary-color);
         }
+
+        .emoji-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .voice-btn {
+            margin-left: 10px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         #send-btn {
             margin-left: 10px;
-            padding: 12px 25px;
-            background-color: #3498db;
+            padding: 12px 20px;
+            background-color: var(--primary-color);
             color: white;
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 1rem;
             font-weight: 500;
-            transition: background-color 0.3s;
         }
+
         #send-btn:hover {
-            background-color: #2980b9;
+            background-color: var(--primary-hover);
         }
-        #sender {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 25px;
-            font-size: 16px;
-            outline: none;
+
+        #send-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
+
         .message {
             margin: 10px 0;
             padding: 12px 15px;
             border-radius: 18px;
-            max-width: 70%;
+            max-width: 80%;
             word-wrap: break-word;
             line-height: 1.4;
             position: relative;
+            animation: fadeIn 0.3s ease-out;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .sent {
-            background-color: #3498db;
-            color: white;
+            background-color: var(--message-sent);
+            color: var(--message-text-sent);
             margin-left: auto;
             border-bottom-right-radius: 5px;
         }
+
         .received {
-            background-color: #eaeaea;
+            background-color: var(--message-received);
+            color: var(--message-text-received);
             margin-right: auto;
             border-bottom-left-radius: 5px;
         }
+
         .message strong {
             display: block;
             margin-bottom: 5px;
             font-weight: 600;
         }
-        .sent strong {
-            color: #e6f2ff;
-        }
-        .received strong {
-            color: #555;
-        }
+
         .message-content {
             margin: 5px 0;
         }
-        .timestamp {
-            font-size: 12px;
-            opacity: 0.7;
+
+        .message-footer {
+            display: flex;
+            justify-content: space-between;
             margin-top: 5px;
-            text-align: right;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .status {
+            margin-left: 5px;
+            color: var(--status-color);
+            font-style: italic;
+        }
+
+        .typing-indicator {
+            font-style: italic;
+            opacity: 0.7;
+            margin: 5px 0;
+            padding: 5px 15px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ff4444;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+            display: none;
+        }
+
+        .connection-status.connected {
+            background-color: #4CAF50;
+        }
+
+        /* Emoji picker styles */
+        .emoji-picker {
+            position: absolute;
+            bottom: 60px;
+            right: 15px;
+            width: 300px;
+            height: 300px;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .emoji-category {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .emoji-category-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 5px;
+        }
+
+        .emoji-item {
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        .emoji-item:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Voice message styles */
+        .voice-message {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            margin: 5px 0;
+        }
+
+        .voice-message.sent {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .voice-message-controls {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        .voice-message-play {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .voice-message-play:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .voice-message-duration {
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        .voice-message-waveform {
+            flex: 1;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .voice-message-waveform.sent {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .voice-message-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 0%;
+            background-color: var(--primary-color);
+        }
+
+        .voice-recording {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+        }
+
+        .recording-indicator {
+            width: 12px;
+            height: 12px;
+            background-color: #ff4444;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 1s infinite;
+        }
+
+        .recording-time {
+            margin-right: 15px;
+            font-family: monospace;
+        }
+
+        .stop-recording {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .header {
+                padding: 10px 15px;
+            }
+
+            h1 {
+                font-size: 1.2rem;
+            }
+
+            #chat-container {
+                height: calc(100vh - 100px);
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 10px 12px;
+            }
+
+            #send-btn {
+                padding: 12px 15px;
+            }
+
+            .emoji-picker {
+                width: 250px;
+                height: 250px;
+                right: 10px;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #chat-container {
+                max-width: 800px;
+            }
         }
     </style>
 </head>
 <body>
-<h1>Spring Boot Chat</h1>
+<div class="header">
+    <h1>Spring Boot Chat</h1>
+    <button class="theme-toggle" id="theme-toggle">🌓</button>
+</div>
+
 <div id="chat-container">
-    <input type="text" id="sender" placeholder="Your name">
+    <div id="sender-container">
+        <input type="text" id="sender" placeholder="Your name" autocomplete="off">
+    </div>
+
     <div id="chat-box"></div>
+
     <div class="input-container">
-        <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+        <div class="input-wrapper">
+            <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+            <button class="emoji-btn" id="emoji-btn">😊</button>
+        </div>
+        <button class="voice-btn" id="voice-btn" title="Hold to record">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+        </button>
         <button id="send-btn">Send</button>
     </div>
 </div>
 
+<div class="emoji-picker" id="emoji-picker">
+    <div class="emoji-category">
+        <div class="emoji-category-title">Smileys & People</div>
+        <div class="emoji-grid" id="smileys-people"></div>
+    </div>
+    <div class="emoji-category">
+        <div class="emoji-category-title">Animals & Nature</div>
+        <div class="emoji-grid" id="animals-nature"></div>
+    </div>
+    <div class="emoji-category">
+        <div class="emoji-category-title">Food & Drink</div>
+        <div class="emoji-grid" id="food-drink"></div>
+    </div>
+    <div class="emoji-category">
+        <div class="emoji-category-title">Activities</div>
+        <div class="emoji-grid" id="activities"></div>
+    </div>
+    <div class="emoji-category">
+        <div class="emoji-category-title">Objects</div>
+        <div class="emoji-grid" id="objects"></div>
+    </div>
+</div>
+
+<div class="voice-recording" id="voice-recording">
+    <div class="recording-indicator"></div>
+    <span class="recording-time" id="recording-time">00:00</span>
+    <button class="stop-recording" id="stop-recording">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+        </svg>
+    </button>
+</div>
+
+<div class="connection-status" id="connection-status">Disconnected. Trying to reconnect...</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.0/dist/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 <script>
+    // DOM Elements
     const chatBox = document.getElementById('chat-box');
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
     const senderInput = document.getElementById('sender');
+    const themeToggle = document.getElementById('theme-toggle');
+    const connectionStatus = document.getElementById('connection-status');
+    const emojiBtn = document.getElementById('emoji-btn');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceRecording = document.getElementById('voice-recording');
+    const recordingTime = document.getElementById('recording-time');
+    const stopRecordingBtn = document.getElementById('stop-recording');
 
-    // WebSocket connection
-    const socket = new SockJS('/ws-chat');
-    const stompClient = Stomp.over(socket);
+    // App State
+    let stompClient = null;
+    let isConnected = false;
+    let isTyping = false;
+    let typingTimeout;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 5000; // 5 seconds
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingStartTime;
+    let recordingTimer;
+    let audioContext;
+    let analyser;
+    let microphone;
+    let isRecording = false;
+    let currentUser = '';
+    let receivedMessageIds = new Set(); // Track received message IDs to prevent duplicates
 
-    stompClient.connect({}, function(frame) {
-        console.log('Connected: ' + frame);
+    // Emoji data - a subset of commonly used emojis
+    const emojis = {
+        'smileys-people': ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '👶', '🧒', '👦', '👧', '🧑', '👨', '👩', '🧔', '👨‍🦰', '👩‍🦰', '👨‍🦱', '👩‍🦱', '👨‍🦳', '👩‍🦳', '👨‍🦲', '👩‍🦲', '👱', '👱‍♀️', '👱‍♂️', '🧓', '👴', '👵', '🙍', '🙍‍♂️', '🙍‍♀️', '🙎', '🙎‍♂️', '🙎‍♀️', '🙅', '🙅‍♂️', '🙅‍♀️', '🙆', '🙆‍♂️', '🙆‍♀️', '💁', '💁‍♂️', '💁‍♀️', '🙋', '🙋‍♂️', '🙋‍♀️', '🧏', '🧏‍♂️', '🧏‍♀️', '🙇', '🙇‍♂️', '🙇‍♀️', '🤦', '🤦‍♂️', '🤦‍♀️', '🤷', '🤷‍♂️', '🤷‍♀️', '👨‍⚕️', '👩‍⚕️', '👨‍🎓', '👩‍🎓', '👨‍🏫', '👩‍🏫', '👨‍⚖️', '👩‍⚖️', '👨‍🌾', '👩‍🌾', '👨‍🍳', '👩‍🍳', '👨‍🔧', '👩‍🔧', '👨‍🏭', '👩‍🏭', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍💻', '👩‍💻', '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨', '👨‍✈️', '👩‍✈️', '👨‍🚀', '👩‍🚀', '👨‍🚒', '👩‍🚒', '👮', '👮‍♂️', '👮‍♀️', '🕵️', '🕵️‍♂️', '🕵️‍♀️', '💂', '💂‍♂️', '💂‍♀️', '👷', '👷‍♂️', '👷‍♀️', '🤴', '👸', '👳', '👳‍♂️', '👳‍♀️', '👲', '🧕', '🤵', '🤵‍♂️', '🤵‍♀️', '👰', '👰‍♂️', '👰‍♀️', '🤰', '🤱', '👩‍🍼', '👨‍🍼', '🧑‍🍼', '👼', '🎅', '🤶', '🧑‍🎄', '🦸', '🦸‍♂️', '🦸‍♀️', '🦹', '🦹‍♂️', '🦹‍♀️', '🧙', '🧙‍♂️', '🧙‍♀️', '🧚', '🧚‍♂️', '🧚‍♀️', '🧛', '🧛‍♂️', '🧛‍♀️', '🧜', '🧜‍♂️', '🧜‍♀️', '🧝', '🧝‍♂️', '🧝‍♀️', '🧞', '🧞‍♂️', '🧞‍♀️', '🧟', '🧟‍♂️', '🧟‍♀️', '💆', '💆‍♂️', '💆‍♀️', '💇', '💇‍♂️', '💇‍♀️', '🚶', '🚶‍♂️', '🚶‍♀️', '🧍', '🧍‍♂️', '🧍‍♀️', '🧎', '🧎‍♂️', '🧎‍♀️', '🏃', '🏃‍♂️', '🏃‍♀️', '💃', '🕺', '🕴️', '👯', '👯‍♂️', '👯‍♀️', '🧖', '🧖‍♂️', '🧖‍♀️', '🧗', '🧗‍♂️', '🧗‍♀️', '🤺', '🏇', '⛷️', '🏂', '🏌️', '🏌️‍♂️', '🏌️‍♀️', '🏄', '🏄‍♂️', '🏄‍♀️', '🚣', '🚣‍♂️', '🚣‍♀️', '🏊', '🏊‍♂️', '🏊‍♀️', '⛹️', '⛹️‍♂️', '⛹️‍♀️', '🏋️', '🏋️‍♂️', '🏋️‍♀️', '🚴', '🚴‍♂️', '🚴‍♀️', '🚵', '🚵‍♂️', '🚵‍♀️', '🤸', '🤸‍♂️', '🤸‍♀️', '🤽', '🤽‍♂️', '🤽‍♀️', '🤾', '🤾‍♂️', '🤾‍♀️', '🤹', '🤹‍♂️', '🤹‍♀️', '🧘', '🧘‍♂️', '🧘‍♀️', '🛀', '🛌', '🧑‍🤝‍🧑', '👭', '👫', '👬', '💏', '💑', '👪', '🗣️', '👤', '👥', '🫂', '👣', '🦰', '🦱', '🦳', '🦲'],
+        'animals-nature': ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🪱', '🐛', '🦋', '🐌', '🐞', '🐜', '🪰', '🪲', '🪳', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🦣', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🦬', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🪶', '🐓', '🦃', '🦤', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦫', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔', '🌵', '🎄', '🌲', '🌳', '🌴', '🪵', '🌱', '🌿', '☘️', '🍀', '🎍', '🪴', '🎋', '🍃', '🍂', '🍁', '🍄', '🐚', '🪨', '🌾', '💐', '🌷', '🌹', '🥀', '🌺', '🌸', '🌼', '🌻'],
+        'food-drink': ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🫚', '🫛', '🥐', '🥖', '🫓', '🥨', '🥯', '🥞', '🧇', '🧀', '🍖', '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🫔', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲', '🫕', '🥣', '🥗', '🍿', '🧈', '🧂', '🥫', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍥', '🥮', '🍡', '🥟', '🥠', '🥡', '🦀', '🦞', '🦐', '🦑', '🦪', '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯', '🍼', '🥛', '☕', '🫖', '🍵', '🍶', '🍾', '🍷', '🍸', '🍹', '🍺', '🍻', '🥂', '🥃', '🥤', '🧋', '🧃', '🧉', '🧊', '🥢', '🍽️', '🍴', '🥄', '🔪', '🫙', '🏺'],
+        'activities': ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🪁', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎯', '🪀', '🪂', '🎿', '🏂', '🏋️', '🤼', '🤸', '⛹️', '🤺', '🤾', '🏌️', '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚴', '🚵', '🎮', '🕹️', '🎰', '🎲', '♟️', '🧩', '🎭', '🎨', '🧵', '🪡', '🧶', '🪢', '🎼', '🎵', '🎶', '🎤', '🎧', '🎷', '🎸', '🎹', '🎺', '🎻', '🪕', '🥁', '🪘', '📱', '📲', '☎️', '📞', '📟', '📠', '🔋', '🔌', '💻', '🖥️', '🖨️', '⌨️', '🖱️', '🖲️', '💽', '💾', '💿', '📀', '🧮', '🎥', '🎞️', '📽️', '🎬', '📺', '📷', '📸', '📹', '📼', '🔍', '🔎', '🕯️', '💡', '🔦', '🏮', '🪔', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📓', '📒', '📃', '📜', '📄', '📰', '🗞️', '📑', '🔖', '🏷️', '💰', '🪙', '💴', '💵', '💶', '💷', '💸', '💳', '🧾', '💹', '✉️', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗳️', '✏️', '✒️', '🖋️', '🖊️', '🖌️', '🖍️', '📝', '💼', '📁', '📂', '🗂️', '📅', '📆', '🗒️', '🗓️', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇️', '📏', '📐', '✂️', '🗃️', '🗄️', '🗑️', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝️', '🔨', '🪓', '⛏️', '⚒️', '🛠️', '🗡️', '⚔️', '🔫', '🪃', '🏹', '🛡️', '🪚', '🔧', '🪛', '🔩', '⚙️', '🗜️', '⚖️', '🦯', '🔗', '⛓️', '🪝', '🧰', '🧲', '🪜', '⚗️', '🧪', '🧫', '🧬', '🔬', '🔭', '📡', '💉', '🩸', '💊', '🩹', '🩺', '🚪', '🛗', '🪞', '🪟', '🛏️', '🛋️', '🪑', '🚽', '🪠', '🚿', '🛁', '🪤', '🪒', '🧴', '🧷', '🧹', '🧺', '🧻', '🪣', '🧼', '🪥', '🧽', '🧯', '🛒', '🚬', '⚰️', '🪦', '⚱️', '🗿', '🪧', '🏧', '🚮', '🚰', '♿', '🚹', '🚺', '🚻', '🚼', '🚾', '🛂', '🛃', '🛄', '🛅', '⚠️', '🚸', '⛔', '🚫', '🚳', '🚭', '🚯', '🚱', '🚷', '📵', '🔞', '☢️', '☣️', '⬆️', '↗️', '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️', '↕️', '↔️', '↩️', '↪️', '⤴️', '⤵️', '🔃', '🔄', '🔙', '🔚', '🔛', '🔜', '🔝', '🛐', '⚛️', '🕉️', '✡️', '☸️', '☯️', '✝️', '☦️', '☪️', '☮️', '🕎', '🔯', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '⛎', '🔀', '🔁', '🔂', '▶️', '⏩', '⏭️', '⏯️', '◀️', '⏪', '⏮️', '🔼', '⏫', '🔽', '⏬', '⏸️', '⏹️', '⏺️', '⏏️', '🎦', '🔅', '🔆', '📶', '📳', '📴', '♀️', '♂️', '⚧️', '✖️', '➕', '➖', '➗', '♾️', '‼️', '⁉️', '❓', '❔', '❕', '❗', '〰️', '💱', '💲', '⚕️', '♻️', '⚜️', '🔱', '📛', '🔰', '⭕', '✅', '☑️', '✔️', '❌', '❎', '➰', '➿', '〽️', '✳️', '✴️', '❇️', '©️', '®️', '™️', '#️⃣', '*️⃣', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔠', '🔡', '🔢', '🔣', '🔤', '🅰️', '🅱️', '🆎', '🆑', '🆒', '🆓', '🆔', '🆕', '🆖', '🆗', '🆘', '🆙', '🆚', '🈁', '🈂️', '🈷️', '🈶', '🈯', '🉐', '🈹', '🈚', '🈲', '🉑', '🈸', '🈴', '🈳', '㊗️', '㊙️', '🈺', '🈵', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫', '⚪', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬛', '⬜', '◼️', '◻️', '◾', '◽', '▪️', '▫️', '🔶', '🔷', '🔸', '🔹', '🔺', '🔻', '💠', '🔘', '🔳', '🔲', '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️', '🇦🇨', '🇦🇩', '🇦🇪', '🇦🇫', '🇦🇬', '🇦🇮', '🇦🇱', '🇦🇲', '🇦🇴', '🇦🇶', '🇦🇷', '🇦🇸', '🇦🇹', '🇦🇺', '🇦🇼', '🇦🇽', '🇦🇿', '🇧🇦', '🇧🇧', '🇧🇩', '🇧🇪', '🇧🇫', '🇧🇬', '🇧🇭', '🇧🇮', '🇧🇯', '🇧🇱', '🇧🇲', '🇧🇳', '🇧🇴', '🇧🇶', '🇧🇷', '🇧🇸', '🇧🇹', '🇧🇻', '🇧🇼', '🇧🇾', '🇧🇿', '🇨🇦', '🇨🇨', '🇨🇩', '🇨🇫', '🇨🇬', '🇨🇭', '🇨🇮', '🇨🇰', '🇨🇱', '🇨🇲', '🇨🇳', '🇨🇴', '🇨🇵', '🇨🇷', '🇨🇺', '🇨🇻', '🇨🇼', '🇨🇽', '🇨🇾', '🇨🇿', '🇩🇪', '🇩🇬', '🇩🇯', '🇩🇰', '🇩🇲', '🇩🇴', '🇩🇿', '🇪🇦', '🇪🇨', '🇪🇪', '🇪🇬', '🇪🇭', '🇪🇷', '🇪🇸', '🇪🇹', '🇪🇺', '🇫🇮', '🇫🇯', '🇫🇰', '🇫🇲', '🇫🇴', '🇫🇷', '🇬🇦', '🇬🇧', '🇬🇩', '🇬🇪', '🇬🇫', '🇬🇬', '🇬🇭', '🇬🇮', '🇬🇱', '🇬🇲', '🇬🇳', '🇬🇵', '🇬🇶', '🇬🇷', '🇬🇸', '🇬🇹', '🇬🇺', '🇬🇼', '🇬🇾', '🇭🇰', '🇭🇲', '🇭🇳', '🇭🇷', '🇭🇹', '🇭🇺', '🇮🇨', '🇮🇩', '🇮🇪', '🇮🇱', '🇮🇲', '🇮🇳', '🇮🇴', '🇮🇶', '🇮🇷', '🇮🇸', '🇮🇹', '🇯🇪', '🇯🇲', '🇯🇴', '🇯🇵', '🇰🇪', '🇰🇬', '🇰🇭', '🇰🇮', '🇰🇲', '🇰🇳', '🇰🇵', '🇰🇷', '🇰🇼', '🇰🇾', '🇰🇿', '🇱🇦', '🇱🇧', '🇱🇨', '🇱🇮', '🇱🇰', '🇱🇷', '🇱🇸', '🇱🇹', '🇱🇺', '🇱🇻', '🇱🇾', '🇲🇦', '🇲🇨', '🇲🇩', '🇲🇪', '🇲🇫', '🇲🇬', '🇲🇭', '🇲🇰', '🇲🇱', '🇲🇲', '🇲🇳', '🇲🇴', '🇲🇵', '🇲🇶', '🇲🇷', '🇲🇸', '🇲🇹', '🇲🇺', '🇲🇻', '🇲🇼', '🇲🇽', '🇲🇾', '🇲🇿', '🇳🇦', '🇳🇨', '🇳🇪', '🇳🇫', '🇳🇬', '🇳🇮', '🇳🇱', '🇳🇴', '🇳🇵', '🇳🇷', '🇳🇺', '🇳🇿', '🇴🇲', '🇵🇦', '🇵🇪', '🇵🇫', '🇵🇬', '🇵🇭', '🇵🇰', '🇵🇱', '🇵🇲', '🇵🇳', '🇵🇷', '🇵🇸', '🇵🇹', '🇵🇼', '🇵🇾', '🇶🇦', '🇷🇪', '🇷🇴', '🇷🇸', '🇷🇺', '🇷🇼', '🇸🇦', '🇸🇧', '🇸🇨', '🇸🇩', '🇸🇪', '🇸🇬', '🇸🇭', '🇸🇮', '🇸🇯', '🇸🇰', '🇸🇱', '🇸🇲', '🇸🇳', '🇸🇴', '🇸🇷', '🇸🇸', '🇸🇹', '🇸🇻', '🇸🇽', '🇸🇾', '🇸🇿', '🇹🇦', '🇹🇨', '🇹🇩', '🇹🇯', '🇹🇰', '🇹🇱', '🇹🇲', '🇹🇳', '🇹🇴', '🇹🇷', '🇹🇹', '🇹🇻', '🇹🇼', '🇹🇿', '🇺🇦', '🇺🇬', '🇺🇲', '🇺🇳', '🇺🇸', '🇺🇾', '🇺🇿', '🇻🇦', '🇻🇨', '🇻🇪', '🇻🇬', '🇻🇮', '🇻🇳', '🇻🇺', '🇼🇫', '🇼🇸', '🇽🇰', '🇾🇪', '🇾🇹', '🇿🇦', '🇿🇲', '🇿🇼', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🏴󠁧󠁢󠁳󠁣󠁴󠁿', '🏴󠁧󠁢󠁷󠁬󠁳󠁿'],
+        'objects': ['⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸', '💵', '💴', '💶', '💷', '💰', '🪙', '💳', '💎', '⚖️', '🧰', '🪛', '🔧', '🔨', '⚒️', '🛠️', '⛏️', '🔩', '⚙️', '🧱', '⛓️', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡️', '⚔️', '🛡️', '🚬', '⚰️', '🪦', '⚱️', '🏺', '🔮', '📿', '🧿', '💈', '⚗️', '🔭', '🔬', '🕳️', '🩹', '🩺', '💊', '💉', '🩸', '🧬', '🦠', '🧫', '🧪', '🌡️', '🧹', '🪠', '🧺', '🧻', '🚽', '🪣', '🪥', '🧼', '🫧', '🪒', '🧽', '🧴', '🛎️', '🔑', '🗝️', '🚪', '🪑', '🛋️', '🛏️', '🛌', '🧸', '🖼️', '🛍️', '🛒', '🎁', '🎈', '🎏', '🎀', '🎊', '🎉', '🎎', '🏮', '🎐', '🧧', '✉️', '📩', '📨', '📧', '💌', '📥', '📤', '📦', '🏷️', '📪', '📫', '📬', '📭', '📮', '📯', '📜', '📃', '📄', '📑', '🧾', '📊', '📈', '📉', '📋', '📅', '📆', '🗓️', '📇', '📌', '📍', '📎', '🖇️', '📏', '📐', '✂️', '🗃️', '🗄️', '🗑️', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝️', '🔨', '🪓', '⛏️', '⚒️', '🛠️', '🗡️', '⚔️', '🔫', '🪃', '🏹', '🛡️', '🪚', '🔧', '🪛', '🔩', '⚙️', '🗜️', '⚖️', '🦯', '🔗', '⛓️', '🪝', '🧰', '🧲', '🪜', '⚗️', '🧪', '🧫', '🧬', '🔬', '🔭', '📡', '💉', '🩸', '💊', '🩹', '🩺', '🚪', '🛗', '🪞', '🪟', '🛏️', '🛋️', '🪑', '🚽', '🪠', '🚿', '🛁', '🪤', '🪒', '🧴', '🧷', '🧹', '🧺', '🧻', '🪣', '🧼', '🪥', '🧽', '🧯', '🛒', '🚬', '⚰️', '🪦', '⚱️', '🗿', '🪧', '🏧', '🚮', '🚰', '♿', '🚹', '🚺', '🚻', '🚼', '🚾', '🛂', '🛃', '🛄', '🛅', '⚠️', '🚸', '⛔', '🚫', '🚳', '🚭', '🚯', '🚱', '🚷', '📵', '🔞', '☢️', '☣️', '⬆️', '↗️', '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️', '↕️', '↔️', '↩️', '↪️', '⤴️', '⤵️', '🔃', '🔄', '🔙', '🔚', '🔛', '🔜', '🔝', '🛐', '⚛️', '🕉️', '✡️', '☸️', '☯️', '✝️', '☦️', '☪️', '☮️', '🕎', '🔯', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '⛎', '🔀', '🔁', '🔂', '▶️', '⏩', '⏭️', '⏯️', '◀️', '⏪', '⏮️', '🔼', '⏫', '🔽', '⏬', '⏸️', '⏹️', '⏺️', '⏏️', '🎦', '🔅', '🔆', '📶', '📳', '📴', '♀️', '♂️', '⚧️', '✖️', '➕', '➖', '➗', '♾️', '‼️', '⁉️', '❓', '❔', '❕', '❗', '〰️', '💱', '💲', '⚕️', '♻️', '⚜️', '🔱', '📛', '🔰', '⭕', '✅', '☑️', '✔️', '❌', '❎', '➰', '➿', '〽️', '✳️', '✴️', '❇️', '©️', '®️', '™️', '#️⃣', '*️⃣', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔠', '🔡', '🔢', '🔣', '🔤', '🅰️', '🅱️', '🆎', '🆑', '🆒', '🆓', '🆔', '🆕', '🆖', '🆗', '🆘', '🆙', '🆚', '🈁', '🈂️', '🈷️', '🈶', '🈯', '🉐', '🈹', '🈚', '🈲', '🉑', '🈸', '🈴', '🈳', '㊗️', '㊙️', '🈺', '🈵', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '🟤', '⚫', '⚪', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '🟫', '⬛', '⬜', '◼️', '◻️', '◾', '◽', '▪️', '▫️', '🔶', '🔷', '🔸', '🔹', '🔺', '🔻', '💠', '🔘', '🔳', '🔲', '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️']
+    };
 
-        stompClient.subscribe('/topic/public', function(message) {
-            const chatMessage = JSON.parse(message.body);
-            // Only add message if it's from another user
-            if (chatMessage.sender !== senderInput.value.trim()) {
-                addMessage(chatMessage.content, chatMessage.sender, false);
-            }
+    // Theme management
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('chatTheme', theme);
+        themeToggle.textContent = theme === 'dark' ? '🌞' : '🌙';
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    }
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('chatTheme') ||
+                      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme);
+    themeToggle.addEventListener('click', toggleTheme);
+
+    // Initialize WebSocket connection
+    function connect() {
+        const socket = new SockJS('/ws-chat');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Connected: ' + frame);
+            isConnected = true;
+            reconnectAttempts = 0;
+            updateConnectionStatus(true);
+            
+            // Store current user
+            currentUser = senderInput.value.trim() || 'Anonymous';
+
+            // Subscribe to public messages
+            stompClient.subscribe('/topic/public', function(message) {
+                const chatMessage = JSON.parse(message.body);
+                // Only add message if it's not from the current user and we haven't seen it before
+                if (chatMessage.sender !== currentUser && !receivedMessageIds.has(chatMessage.messageId)) {
+                    receivedMessageIds.add(chatMessage.messageId);
+                    if (chatMessage.type === 'voice') {
+                        // For voice messages, we need to handle the audio data properly
+                        // Since blob URLs don't work across users, we'll show a placeholder
+                        addVoiceMessagePlaceholder(chatMessage.sender, chatMessage.duration, false);
+                    } else {
+                        addMessage(chatMessage.content, chatMessage.sender, false);
+                    }
+                }
+            });
+
+            // Subscribe to typing indicators
+            stompClient.subscribe('/topic/typing', function(typing) {
+                const data = JSON.parse(typing.body);
+                if (data.sender !== currentUser) {
+                    showTypingIndicator(data.sender, data.isTyping);
+                }
+            });
+
+        }, function(error) {
+            console.log('Connection error: ', error);
+            isConnected = false;
+            updateConnectionStatus(false);
+            reconnect();
         });
-    });
+    }
 
-    function addMessage(content, sender, isSent) {
+    // Reconnect logic
+    function reconnect() {
+        if (reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            const delay = reconnectAttempts * reconnectDelay;
+            console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
+
+            setTimeout(() => {
+                if (!isConnected) {
+                    connect();
+                }
+            }, delay);
+        } else {
+            console.log('Max reconnection attempts reached');
+            connectionStatus.textContent = "Disconnected. Please refresh the page.";
+        }
+    }
+
+    // Connection status UI
+    function updateConnectionStatus(connected) {
+        connectionStatus.style.display = 'block';
+        connectionStatus.textContent = connected ? "Connected" : "Disconnected. Trying to reconnect...";
+        connectionStatus.className = `connection-status ${connected ? 'connected' : ''}`;
+
+        setTimeout(() => {
+            if (connected) {
+                connectionStatus.style.display = 'none';
+            }
+        }, 3000);
+    }
+
+    // Add message to UI
+    function addMessage(content, sender, isSent, status = 'delivered') {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
         messageDiv.classList.add(isSent ? 'sent' : 'received');
@@ -231,46 +691,382 @@
         messageDiv.innerHTML = `
             <strong>${sender}</strong>
             <div class="message-content">${content}</div>
-            <div class="timestamp">${timeString}</div>
+            <div class="message-footer">
+                <span class="timestamp">${timeString}</span>
+                ${isSent ? `<span class="status">${getStatusIcon(status)}</span>` : ''}
+            </div>
         `;
 
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    sendBtn.addEventListener('click', function() {
+    // Add voice message to UI (for sender's own messages)
+    function addVoiceMessage(audioUrl, sender, duration, isSent) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.classList.add(isSent ? 'sent' : 'received');
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        messageDiv.innerHTML = `
+            <strong>${sender}</strong>
+            <div class="voice-message ${isSent ? 'sent' : ''}">
+                <div class="voice-message-controls">
+                    <button class="voice-message-play">▶️</button>
+                    <span class="voice-message-duration">${formatDuration(duration)}</span>
+                </div>
+                <div class="voice-message-waveform ${isSent ? 'sent' : ''}">
+                    <div class="voice-message-progress"></div>
+                </div>
+            </div>
+            <div class="message-footer">
+                <span class="timestamp">${timeString}</span>
+            </div>
+        `;
+
+        const playButton = messageDiv.querySelector('.voice-message-play');
+        const audio = new Audio(audioUrl);
+        const progressBar = messageDiv.querySelector('.voice-message-progress');
+
+        playButton.addEventListener('click', function() {
+            if (audio.paused) {
+                audio.play();
+                playButton.textContent = '⏸️';
+            } else {
+                audio.pause();
+                playButton.textContent = '▶️';
+            }
+        });
+
+        audio.addEventListener('timeupdate', function() {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+        });
+
+        audio.addEventListener('ended', function() {
+            playButton.textContent = '▶️';
+            progressBar.style.width = '0%';
+        });
+
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // Add voice message placeholder for received messages
+    function addVoiceMessagePlaceholder(sender, duration, isSent) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.classList.add(isSent ? 'sent' : 'received');
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        messageDiv.innerHTML = `
+            <strong>${sender}</strong>
+            <div class="voice-message ${isSent ? 'sent' : ''}">
+                <div class="voice-message-controls">
+                    <button class="voice-message-play" disabled>🔇</button>
+                    <span class="voice-message-duration">${formatDuration(duration)}</span>
+                </div>
+                <div class="voice-message-waveform ${isSent ? 'sent' : ''}">
+                    <div class="voice-message-progress" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="message-footer">
+                <span class="timestamp">${timeString}</span>
+                <span class="status">Voice message received</span>
+            </div>
+        `;
+
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function formatDuration(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function getStatusIcon(status) {
+        switch(status) {
+            case 'delivered': return '✓✓';
+            case 'sending': return '...';
+            case 'failed': return '!';
+            default: return '✓';
+        }
+    }
+
+    // Typing indicator
+    function showTypingIndicator(sender, typing) {
+        let indicator = document.getElementById('typing-indicator');
+
+        if (typing) {
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'typing-indicator';
+                indicator.className = 'typing-indicator';
+                indicator.textContent = `${sender} is typing...`;
+                chatBox.appendChild(indicator);
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Send message
+    function sendMessage() {
         const messageContent = messageInput.value.trim();
         const sender = senderInput.value.trim() || 'Anonymous';
 
         if (messageContent) {
+            const messageId = Date.now() + Math.random(); // Unique identifier
             const chatMessage = {
                 content: messageContent,
-                sender: sender
+                sender: sender,
+                type: 'text',
+                messageId: messageId
             };
 
-            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-            addMessage(messageContent, sender, true);
+            // Add immediately to UI with "sending" status
+            addMessage(messageContent, sender, true, 'sending');
+
+            if (isConnected) {
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                // Update status to delivered after a short delay
+                setTimeout(() => {
+                    const messages = chatBox.querySelectorAll('.message.sent');
+                    if (messages.length > 0) {
+                        const lastMessage = messages[messages.length - 1];
+                        const statusElement = lastMessage.querySelector('.status');
+                        if (statusElement) {
+                            statusElement.textContent = getStatusIcon('delivered');
+                        }
+                    }
+                }, 500);
+            } else {
+                // Update status to failed if offline
+                setTimeout(() => {
+                    const messages = chatBox.querySelectorAll('.message.sent');
+                    if (messages.length > 0) {
+                        const lastMessage = messages[messages.length - 1];
+                        const statusElement = lastMessage.querySelector('.status');
+                        if (statusElement) {
+                            statusElement.textContent = getStatusIcon('failed');
+                        }
+                    }
+                }, 1000);
+                updateConnectionStatus(false);
+            }
+
             messageInput.value = '';
+
+            // Notify that typing has stopped
+            if (isTyping) {
+                isTyping = false;
+                if (isConnected) {
+                    stompClient.send("/app/typing", {}, JSON.stringify({
+                        sender: sender,
+                        isTyping: false
+                    }));
+                }
+            }
         }
-    });
+    }
+
+    // Initialize emoji picker
+    function initEmojiPicker() {
+        // Populate emoji categories
+        for (const category in emojis) {
+            const container = document.getElementById(category);
+            emojis[category].forEach(emoji => {
+                const emojiElement = document.createElement('div');
+                emojiElement.classList.add('emoji-item');
+                emojiElement.textContent = emoji;
+                emojiElement.addEventListener('click', () => {
+                    messageInput.value += emoji;
+                    messageInput.focus();
+                });
+                container.appendChild(emojiElement);
+            });
+        }
+
+        // Toggle emoji picker
+        emojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', () => {
+            emojiPicker.style.display = 'none';
+        });
+
+        // Prevent emoji picker from closing when clicking inside it
+        emojiPicker.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    // Initialize voice recording
+    function initVoiceRecording() {
+        voiceBtn.addEventListener('mousedown', startRecording);
+        voiceBtn.addEventListener('touchstart', startRecording);
+        voiceBtn.addEventListener('mouseup', stopRecording);
+        voiceBtn.addEventListener('touchend', stopRecording);
+        voiceBtn.addEventListener('mouseleave', stopRecording);
+        stopRecordingBtn.addEventListener('click', stopRecording);
+
+        async function startRecording(e) {
+            e.preventDefault();
+            if (isRecording) return;
+
+            try {
+                isRecording = true;
+                audioChunks = [];
+                recordingStartTime = Date.now();
+                
+                // Update recording timer
+                updateRecordingTime();
+                recordingTimer = setInterval(updateRecordingTime, 1000);
+                
+                // Show recording UI
+                voiceRecording.style.display = 'flex';
+                
+                // Get microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new AudioContext();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                // Initialize MediaRecorder
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                mediaRecorder.start(100); // Collect data every 100ms
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                stopRecording();
+                addMessage("Couldn't access microphone", "System", false);
+            }
+        }
+
+        function updateRecordingTime() {
+            const seconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+            recordingTime.textContent = formatDuration(seconds);
+        }
+
+        async function stopRecording() {
+            if (!isRecording) return;
+            isRecording = false;
+            
+            clearInterval(recordingTimer);
+            voiceRecording.style.display = 'none';
+            
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                
+                // Stop all tracks
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                // Wait for the last data to be available
+                await new Promise(resolve => {
+                    mediaRecorder.onstop = resolve;
+                });
+                
+                // Create audio blob and URL
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const duration = (Date.now() - recordingStartTime) / 1000;
+                
+                // Send voice message
+                const sender = senderInput.value.trim() || 'Anonymous';
+                
+                // Add to UI immediately (only for sender)
+                addVoiceMessage(audioUrl, sender, duration, true);
+                
+                if (isConnected) {
+                    // Send voice message info (without the blob URL since it's not accessible to others)
+                    const chatMessage = {
+                        sender: sender,
+                        duration: duration,
+                        type: 'voice',
+                        messageId: Date.now() + Math.random() // Unique identifier
+                    };
+                    stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                } else {
+                    updateConnectionStatus(false);
+                }
+            }
+        }
+    }
+
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
 
     messageInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            const messageContent = messageInput.value.trim();
-            const sender = senderInput.value.trim() || 'Anonymous';
-
-            if (messageContent) {
-                const chatMessage = {
-                    content: messageContent,
-                    sender: sender
-                };
-
-                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-                addMessage(messageContent, sender, true);
-                messageInput.value = '';
-            }
+            sendMessage();
         }
     });
+
+    messageInput.addEventListener('input', function() {
+        const sender = senderInput.value.trim() || 'Anonymous';
+        const isCurrentlyTyping = messageInput.value.length > 0;
+
+        if (isCurrentlyTyping !== isTyping) {
+            isTyping = isCurrentlyTyping;
+            if (isConnected) {
+                stompClient.send("/app/typing", {}, JSON.stringify({
+                    sender: sender,
+                    isTyping: isTyping
+                }));
+            }
+        }
+
+        clearTimeout(typingTimeout);
+        if (isCurrentlyTyping) {
+            typingTimeout = setTimeout(() => {
+                isTyping = false;
+                if (isConnected) {
+                    stompClient.send("/app/typing", {}, JSON.stringify({
+                        sender: sender,
+                        isTyping: false
+                    }));
+                }
+            }, 2000);
+        }
+    });
+
+    // Handle window visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            // Potentially reload messages when tab becomes visible
+        }
+    });
+
+    // Initialize the app
+    connect();
+    initEmojiPicker();
+    initVoiceRecording();
+
+    // Periodically check connection and cleanup
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && !isConnected) {
+            connect();
+        }
+        
+        // Clean up old message IDs to prevent memory leaks (keep only last 1000)
+        if (receivedMessageIds.size > 1000) {
+            const idsArray = Array.from(receivedMessageIds);
+            receivedMessageIds = new Set(idsArray.slice(-500));
+        }
+    }, 30000); // Every 30 seconds
 </script>
 </body>
 </html>
