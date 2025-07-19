@@ -201,6 +201,21 @@
             color: var(--text-color);
         }
 
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            background-color: #ff4444;
+            color: white;
+        }
+
+        .connection-status.connected {
+            background-color: #00C851;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -258,6 +273,7 @@
 <div class="theme-toggle" id="themeToggle">
     <i class="fas fa-moon"></i>
 </div>
+<div class="connection-status" id="connectionStatus">Disconnected</div>
 
 <h1>Spring Boot Chat</h1>
 <div id="chat-container">
@@ -280,8 +296,9 @@
     const senderInput = document.getElementById('sender');
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = themeToggle.querySelector('i');
+    const connectionStatus = document.getElementById('connectionStatus');
 
-    // Check for saved theme preference or use preferred color scheme
+    // Theme management
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -290,7 +307,6 @@
         themeIcon.classList.replace('fa-moon', 'fa-sun');
     }
 
-    // Theme toggle functionality
     themeToggle.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
         if (document.body.classList.contains('dark-mode')) {
@@ -302,17 +318,56 @@
         }
     });
 
-    const socket = new SockJS('/ws'); // endpoint in Spring Boot config
+    // WebSocket connection
+    const socket = new SockJS('http://localhost:9090/ws');
     const stompClient = Stomp.over(socket);
+    
+    // Set debug to see connection messages in console
+    stompClient.debug = function(str) {
+        console.log('STOMP: ' + str);
+    };
 
-    stompClient.connect({}, function () {
-        stompClient.subscribe('/topic/public', function (message) {
+    function updateConnectionStatus(connected) {
+        connectionStatus.textContent = connected ? 'Connected' : 'Disconnected';
+        connectionStatus.className = 'connection-status ' + (connected ? 'connected' : '');
+    }
+
+    stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+        updateConnectionStatus(true);
+        
+        stompClient.subscribe('/topic/public', function(message) {
+            console.log('Message received:', message);
             const chatMessage = JSON.parse(message.body);
-            if (chatMessage.sender !== senderInput.value.trim()) {
-                addMessage(chatMessage.content, chatMessage.sender, false);
-            }
+            addMessage(chatMessage.content, chatMessage.sender, chatMessage.sender === senderInput.value.trim());
         });
+    }, function(error) {
+        console.log('Connection error: ' + error);
+        updateConnectionStatus(false);
+        // Attempt reconnection after 5 seconds
+        setTimeout(connectWebSocket, 5000);
     });
+
+    function connectWebSocket() {
+        console.log('Attempting to connect...');
+        const newSocket = new SockJS('http://localhost:9090/ws');
+        const newStompClient = Stomp.over(newSocket);
+        
+        newStompClient.connect({}, function(frame) {
+            console.log('Reconnected: ' + frame);
+            updateConnectionStatus(true);
+            stompClient = newStompClient;
+            
+            newStompClient.subscribe('/topic/public', function(message) {
+                const chatMessage = JSON.parse(message.body);
+                addMessage(chatMessage.content, chatMessage.sender, chatMessage.sender === senderInput.value.trim());
+            });
+        }, function(error) {
+            console.log('Reconnection failed: ' + error);
+            updateConnectionStatus(false);
+            setTimeout(connectWebSocket, 5000);
+        });
+    }
 
     function addMessage(content, sender, isSent) {
         const messageDiv = document.createElement('div');
@@ -322,7 +377,7 @@
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         messageDiv.innerHTML = `
-            <strong>${sender}</strong>
+            <strong>${sender || 'Anonymous'}</strong>
             <div class="message-content">${content}</div>
             <div class="timestamp">${timeString}</div>
         `;
@@ -332,7 +387,7 @@
     }
 
     sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', function (e) {
+    messageInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             sendMessage();
         }
@@ -340,23 +395,22 @@
 
     function sendMessage() {
         const messageContent = messageInput.value.trim();
-        const sender = senderInput.value.trim() || 'Anonymous';
+        const sender = senderInput.value.trim();
 
         if (messageContent) {
             const chatMessage = {
                 content: messageContent,
-                sender: sender
+                sender: sender || 'Anonymous'
             };
 
+            console.log('Sending message:', chatMessage);
             stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-            addMessage(messageContent, sender, true);
             messageInput.value = '';
         }
     }
 
     // Handle window resize for better mobile experience
     window.addEventListener('resize', function() {
-        // Force scroll to bottom when keyboard appears on mobile
         chatBox.scrollTop = chatBox.scrollHeight;
     });
 </script>
